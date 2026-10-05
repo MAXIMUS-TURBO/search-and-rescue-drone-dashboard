@@ -1,0 +1,13 @@
+
+SEARCH_AREA = "/strix/search_area"
+ROUTE = "/strix/route"
+FLIGHT_COMMAND = "/strix/flight_command"
+FLIGHT_STATUS = "/strix/flight_status"
+DRONE_POSITION = "/strix/drone_position"
+DRONE_ODOMETRY = "/strix/drone_odometry"
+DRONE_BATTERY = "/strix/drone_battery"
+CAMERA_IMAGE = "/strix/camera_image"
+DETECTIONS = "/strix/detections"
+TARGET_LOCATION = "/strix/target_location"
+MISSION_STATUS = "/strix/mission_status"
+MISSION_COMMAND = "/strix/mission_command"
