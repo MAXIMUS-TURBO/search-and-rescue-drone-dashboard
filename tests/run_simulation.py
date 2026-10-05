@@ -15,7 +15,7 @@
 #(just like the linux C project from OS but python)
 
 #sources and tutorials:
-#  https://docs.python.org/3/library/subprocess.html#subprocess.Popen
+#  https://docs.python.org/3/library/subprocess.html
 
 import os
 import subprocess
