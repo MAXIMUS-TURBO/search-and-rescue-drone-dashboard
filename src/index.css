@@ -1,347 +1,421 @@
+/* ============================================================
+   STRIX Command Station
+   Basic dashboard layout
+   ============================================================ */
+
+
+/* ------------------------------------------------------------
+   Page
+   ------------------------------------------------------------ */
+
 * {
   box-sizing: border-box;
 }
 
-body {
+
+html,
+body,
+#root {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #111827;
-  color: white;
+  width: 100%;
+  min-height: 100%;
 }
+
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f4f4f4;
+  color: #222;
+}
+
+
+button,
+input {
+  font: inherit;
+}
+
+
+/* ------------------------------------------------------------
+   Main Application
+   ------------------------------------------------------------ */
+
+main {
+  min-height: 100vh;
+  padding: 16px;
+}
+
+
+main > h1 {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+
+/* ------------------------------------------------------------
+   Dashboard Layout
+   ------------------------------------------------------------
+   
+   Left:
+   Search area + mission controls
+
+   Center:
+   Map + camera + alerts
+
+   Right:
+   Mission status + telemetry + targets
+   ------------------------------------------------------------ */
 
 .dashboard {
-  min-height: 100vh;
+  display: grid;
+
+  grid-template-columns:
+    250px
+    minmax(500px, 1fr)
+    280px;
+
+  gap: 16px;
+
+  align-items: start;
 }
 
-.header {
+
+/* ------------------------------------------------------------
+   Dashboard Columns
+   ------------------------------------------------------------ */
+
+.dashboard-left,
+.dashboard-center,
+.dashboard-right {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 40px;
-  background: #1f2937;
-  border-bottom: 1px solid #374151;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.header h1 {
-  margin: 0;
-  font-size: 28px;
+
+/* ------------------------------------------------------------
+   Basic Component Panels
+   ------------------------------------------------------------ */
+
+.dashboard section,
+.dashboard aside {
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-.header p {
-  margin: 6px 0 0;
-  color: #9ca3af;
+
+.dashboard section {
+  padding: 12px;
 }
 
-.drone-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: bold;
+
+.dashboard h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+
+  font-size: 18px;
+}
+
+
+.dashboard h3 {
+  margin-top: 12px;
+  margin-bottom: 8px;
+
   font-size: 14px;
 }
 
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #22c55e;
+
+.dashboard p {
+  margin-top: 6px;
+  margin-bottom: 6px;
 }
 
-main {
-  padding: 40px;
+
+/* ------------------------------------------------------------
+   Inputs
+   ------------------------------------------------------------ */
+
+input {
+  width: 100%;
+
+  padding: 8px;
+
+  margin-bottom: 8px;
+
+  border: 1px solid #aaa;
+
+  border-radius: 3px;
 }
 
-.telemetry-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+
+/* ------------------------------------------------------------
+   Buttons
+   ------------------------------------------------------------ */
+
+button {
+  padding: 8px 10px;
+
+  margin:
+    3px 3px 3px 0;
+
+  border: 1px solid #999;
+
+  border-radius: 3px;
+
+  background-color: #eee;
+
+  cursor: pointer;
 }
 
-.card {
-  background: #1f2937;
-  border: 1px solid #374151;
-  border-radius: 10px;
-  padding: 24px;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+
+button:hover:not(:disabled) {
+  background-color: #ddd;
 }
 
-.label {
-  color: #9ca3af;
-  font-size: 12px;
-  font-weight: bold;
-  letter-spacing: 1px;
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
-.value {
-  font-size: 28px;
-  font-weight: bold;
-}
 
-.mission-panel {
-  margin-top: 20px;
-  padding: 24px;
-  background: #1f2937;
-  border: 1px solid #374151;
-  border-radius: 10px;
-  display: flex;
-  gap: 100px;
-}
+/* ============================================================
+   MAP
+   ============================================================ */
 
-.mission-panel h2 {
-  margin: 8px 0 0;
-  font-size: 24px;
-}
 
-@media (max-width: 900px) {
-  .telemetry-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* ------------------------------------------------------------
+   Map Panel
+   ------------------------------------------------------------ */
 
-@media (max-width: 600px) {
-  .header {
-    padding: 20px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 15px;
-  }
+.map-section {
+  padding: 0 !important;
 
-  main {
-    padding: 20px;
-  }
-
-  .telemetry-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .mission-panel {
-    flex-direction: column;
-    gap: 20px;
-  }
-}
-
-.mission-visuals {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-  height: 550px;
-  margin-top: 16px;
-}
-
-.map-panel,
-.camera-panel {
-  min-width: 0;
   overflow: hidden;
-  border-radius: 12px;
 }
 
-.map-panel {
-  display: flex;
-  flex-direction: column;
+
+.map-section > h2 {
+  padding: 12px;
+
+  margin: 0;
+
+  border-bottom: 1px solid #ccc;
 }
 
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #111827;
-  color: white;
-}
 
-.panel-status {
-  font-size: 12px;
-  color: #9ca3af;
-}
+/* ------------------------------------------------------------
+   Map Container
+   ------------------------------------------------------------ */
 
 .map-container {
-  flex: 1;
-  min-height: 0;
+  width: 100%;
+  height: 600px;
+
   position: relative;
 }
 
-.camera-feed {
+
+/*
+   DroneMap.tsx wrapper.
+
+   position: relative allows UI elements such as route progress
+   to be positioned over the Leaflet map.
+*/
+
+.drone-map {
+  position: relative;
+
+  width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: #111827;
-  color: white;
 }
 
-.camera-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
+
+/* Leaflet map */
+
+.drone-map .leaflet-container {
+  width: 100%;
+  height: 100%;
 }
 
-.camera-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: #9ca3af;
-}
 
-.camera-screen {
-  flex: 1;
+/* ------------------------------------------------------------
+   Waiting for GPS
+   ------------------------------------------------------------ */
+
+.map-loading {
+  width: 100%;
+  height: 100%;
+
   display: flex;
+
   align-items: center;
   justify-content: center;
-  background: #030712;
+
+  background-color: #ddd;
+
+  font-weight: bold;
 }
 
-.camera-placeholder {
-  text-align: center;
-  color: #9ca3af;
-}
 
-.camera-icon {
-  font-size: 42px;
-  margin-bottom: 10px;
-}
-
-.camera-title {
-  font-size: 16px;
-  color: white;
-}
-
-.camera-placeholder small {
-  display: block;
-  margin-top: 6px;
-  color: #6b7280;
-}
-
-.camera-footer {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 16px;
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-/* adding all ros 2 nodes as a test */
-
-.mission-overlay {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-
-  z-index: 1000;
-
-  width: 280px;
-
-  background: rgba(0, 0, 0, 0.85);
-  color: white;
-
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
-  overflow: hidden;
-}
-
-.mission-overlay-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 12px 14px;
-
-  cursor: pointer;
-  user-select: none;
-
-  font-size: 16px;
-}
-
-.mission-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.collapse-arrow {
-  font-size: 11px;
-  opacity: 0.6;
-}
-
-.mission-overlay-content {
-  max-height: 300px;
-  opacity: 1;
-
-  overflow: hidden;
-
-  transition: max-height 0.2s ease, opacity 0.2s ease;
-}
-
-.mission-overlay.collapsed .mission-overlay-content {
-  max-height: 0;
-  opacity: 0;
-}
-
-.mission-overlay-row {
-  display: flex;
-  justify-content: space-between;
-
-  padding: 7px 14px;
-
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-
-  font-size: 12px;
-}
-
-.mission-overlay-row span {
-  opacity: 0.65;
-}
-
-.mission-overlay-detail {
-  margin: 10px 14px 14px;
-  padding-top: 10px;
-
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-
-  font-size: 11px;
-  opacity: 0.75;
-  line-height: 1.4;
-}
+/* ============================================================
+   ROUTE PROGRESS
+   ============================================================ */
 
 .route-progress-overlay {
   position: absolute;
+
+  left: 10px;
   bottom: 20px;
-  left: 20px;
 
-  z-index: 1000;
+  z-index: 500;
 
-  min-width: 150px;
-  padding: 12px 16px;
+  min-width: 130px;
 
-  background: rgba(0, 0, 0, 0.85);
-  color: white;
+  padding: 10px;
 
-  border-radius: 8px;
+  background-color: white;
 
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid #555;
+
+  border-radius: 4px;
+
+  pointer-events: none;
 }
+
 
 .route-progress-title {
+  margin-bottom: 5px;
+
   font-size: 11px;
   font-weight: bold;
-  letter-spacing: 1px;
-  opacity: 0.65;
 }
+
 
 .route-progress-value {
-  margin-top: 4px;
-
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
 }
 
+
 .route-progress-status {
-  margin-top: 3px;
+  margin-top: 4px;
 
   font-size: 11px;
-  opacity: 0.75;
+}
+
+
+/* ============================================================
+   CAMERA FEED
+   ============================================================ */
+
+.camera-section {
+  padding: 0 !important;
+
+  overflow: hidden;
+}
+
+
+.camera-section > h2 {
+  padding: 12px;
+
+  margin: 0;
+
+  border-bottom: 1px solid #ccc;
+}
+
+
+.camera-feed {
+  width: 100%;
+  height: 250px;
+
+  background-color: black;
+
+  overflow: hidden;
+}
+
+
+.camera-feed img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: cover;
+}
+
+
+/* ============================================================
+   TARGETS
+   ============================================================ */
+
+.target-list {
+  max-height: 300px;
+
+  overflow-y: auto;
+}
+
+
+.target {
+  padding: 8px 0;
+
+  border-bottom: 1px solid #ddd;
+}
+
+
+.target:last-child {
+  border-bottom: none;
+}
+
+
+/* ============================================================
+   TELEMETRY
+   ============================================================ */
+
+.telemetry-item {
+  padding: 6px 0;
+
+  border-bottom: 1px solid #eee;
+}
+
+
+.telemetry-item:last-child {
+  border-bottom: none;
+}
+
+
+/* ============================================================
+   MISSION ALERTS
+   ============================================================ */
+
+.mission-alerts p {
+  padding: 6px;
+
+  margin: 4px 0;
+
+  background-color: #eee;
+
+  border-radius: 3px;
+}
+
+
+/* ============================================================
+   Responsive Layout
+   ============================================================ */
+
+/*
+   On smaller screens, stack the dashboard vertically instead
+   of trying to squeeze three columns onto the screen.
+*/
+
+@media (max-width: 1000px) {
+
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+
+
+  .map-container {
+    height: 500px;
+  }
 }

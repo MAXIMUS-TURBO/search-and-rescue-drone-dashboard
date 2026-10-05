@@ -1,67 +1,102 @@
+// DroneMap.tsx
+//
+// Displays the STRIX drone position, planned search route,
+// completed route, waypoints, and detected target locations.
+//
+// Data is received by App.tsx from the FastAPI telemetry
+// WebSocket and passed into this component as props.
+//
+// Sources & tutorials:
+// React Leaflet: https://react-leaflet.js.org/
+// Leaflet: https://leafletjs.com/reference.html
+// Haversine distance formula:
+// https://www.movable-type.co.uk/scripts/latlong.html
+
+
 import {
   MapContainer,
   TileLayer,
   Marker,
-  Polygon,
   Polyline,
   Tooltip,
   CircleMarker,
 } from "react-leaflet"
+
 import L from "leaflet"
+
 import "leaflet/dist/leaflet.css"
-//drone map types and props
 
-type SearchArea = {
-  corner_1: {
-    latitude: number
-    longitude: number
-  }
-  corner_2: {
-    latitude: number
-    longitude: number
-  }
-}
 
-type Waypoint = {
-  latitude: number
-  longitude: number
-  altitude: number
-}
+// ============================================================
+// Shared dashboard types
+// ============================================================
 
-type Route = {
-  waypoints: Waypoint[]
-}
+import type {
+  Waypoint,
+  Target,
+} from "../types/dashboard"
 
-type TargetLocation = {
-  latitude: number
-  longitude: number
-  altitude: number
-}
+
+// ============================================================
+// Component Props
+// ============================================================
 
 type DroneMapProps = {
-  latitude: number
-  longitude: number
-  altitude: number
-  battery: number
-  searchArea: SearchArea | null
-  route: Route | null
-  targetLocation: {
-    latitude: number
-    longitude: number
-    altitude: number
-  } | null
+  latitude: number | null
+  longitude: number | null
+  altitude: number | null
+  battery: number | null
+
+  route: {
+    waypoints: Waypoint[]
+  }
+
+  targets: Target[]
 }
+
+
+// ============================================================
+// Drone Marker Icon
+// ============================================================
+//
+// Leaflet's default marker icon paths sometimes do not resolve
+// correctly when Leaflet is used inside a React/Vite project.
+// These URLs explicitly provide the standard Leaflet icon files.
+//
+// Source:
+// https://leafletjs.com/reference.html#icon
 
 const droneIcon = new L.Icon({
   iconUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+
   iconRetinaUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+
   shadowUrl:
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+
   iconSize: [25, 41],
+
   iconAnchor: [12, 41],
 })
+
+
+// ============================================================
+// Calculate GPS Distance
+// ============================================================
+//
+// Calculate the distance between two GPS coordinates.
+//
+// This uses the Haversine formula.
+//
+// The distance is used to determine which route waypoint is
+// currently closest to the drone.
+//
+// R is the approximate radius of Earth in meters.
+//
+// Source:
+// https://www.movable-type.co.uk/scripts/latlong.html
 
 function calculateDistance(
   lat1: number,
@@ -69,13 +104,29 @@ function calculateDistance(
   lat2: number,
   lon2: number
 ) {
+
   const R = 6371000
 
-  const lat1Rad = (lat1 * Math.PI) / 180
-  const lat2Rad = (lat2 * Math.PI) / 180
 
-  const deltaLat = ((lat2 - lat1) * Math.PI) / 180
-  const deltaLon = ((lon2 - lon1) * Math.PI) / 180
+  // Convert latitude values from degrees to radians.
+
+  const lat1Rad =
+    (lat1 * Math.PI) / 180
+
+  const lat2Rad =
+    (lat2 * Math.PI) / 180
+
+
+  // Difference between the two GPS coordinates.
+
+  const deltaLat =
+    ((lat2 - lat1) * Math.PI) / 180
+
+  const deltaLon =
+    ((lon2 - lon1) * Math.PI) / 180
+
+
+  // Haversine formula.
 
   const a =
     Math.sin(deltaLat / 2) ** 2 +
@@ -83,313 +134,535 @@ function calculateDistance(
       Math.cos(lat2Rad) *
       Math.sin(deltaLon / 2) ** 2
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+  const c =
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    )
+
 
   return R * c
 }
+
+
+// ============================================================
+// Drone Map
+// ============================================================
 
 function DroneMap({
   latitude,
   longitude,
   altitude,
   battery,
-  searchArea,
   route,
-  targetLocation,
+  targets,
 }: DroneMapProps) {
 
 
-  const searchAreaPolygon = searchArea
-    ? [
-        [
-          searchArea.corner_1.latitude,
-          searchArea.corner_1.longitude,
-        ],
-        [
-          searchArea.corner_1.latitude,
-          searchArea.corner_2.longitude,
-        ],
-        [
-          searchArea.corner_2.latitude,
-          searchArea.corner_2.longitude,
-        ],
-        [
-          searchArea.corner_2.latitude,
-          searchArea.corner_1.longitude,
-        ],
-      ] as [number, number][]
-    : []
+  // ----------------------------------------------------------
+  // Wait for drone GPS data
+  // ----------------------------------------------------------
+  //
+  // Leaflet cannot create a map center using null coordinates.
+  // The backend starts with null values until the first ROS 2
+  // position message is received.
 
-  const routePositions =
-    route?.waypoints.map(
-      (waypoint) =>
-        [waypoint.latitude, waypoint.longitude] as [
-          number,
-          number
-        ]
-    ) ?? []
+  if (
+    latitude === null ||
+    longitude === null
+  ) {
 
-  // Find the waypoint closest to the drone.
-  let currentWaypointIndex = -1
+    return (
+      <div className="map-loading">
 
-  if (route && route.waypoints.length > 0) {
-    let closestDistance = Infinity
+        Waiting for drone GPS...
 
-    route.waypoints.forEach((waypoint, index) => {
-      const distance = calculateDistance(
-        latitude,
-        longitude,
-        waypoint.latitude,
-        waypoint.longitude
-      )
-
-      if (distance < closestDistance) {
-        closestDistance = distance
-        currentWaypointIndex = index
-      }
-    })
+      </div>
+    )
   }
 
-  //route completed when the drone is closest to the final waypoint
-  const routeComplete =
-    route &&
-    route.waypoints.length > 0 &&
-    currentWaypointIndex === route.waypoints.length - 1
 
-  //route that is already traveled
+  // ----------------------------------------------------------
+  // Convert route waypoints into Leaflet coordinates
+  // ----------------------------------------------------------
+
+  const routePositions =
+    route.waypoints.map(
+      (waypoint) =>
+        [
+          waypoint.latitude,
+          waypoint.longitude,
+        ] as [number, number]
+    )
+
+
+  // ----------------------------------------------------------
+  // Find the waypoint closest to the drone
+  // ----------------------------------------------------------
+  //
+  // This is currently used to estimate the drone's progress
+  // through the simulated search route.
+
+  let currentWaypointIndex = -1
+
+
+  if (route.waypoints.length > 0) {
+
+    let closestDistance = Infinity
+
+
+    route.waypoints.forEach(
+      (waypoint, index) => {
+
+        const distance =
+          calculateDistance(
+            latitude,
+            longitude,
+            waypoint.latitude,
+            waypoint.longitude
+          )
+
+
+        if (distance < closestDistance) {
+
+          closestDistance = distance
+
+          currentWaypointIndex = index
+        }
+      }
+    )
+  }
+
+
+  // ----------------------------------------------------------
+  // Determine whether the route is complete
+  // ----------------------------------------------------------
+  //
+  // For the current simulator, the route is considered complete
+  // when the drone is closest to the final waypoint.
+
+  const routeComplete =
+    route.waypoints.length > 0 &&
+    currentWaypointIndex ===
+      route.waypoints.length - 1
+
+
+  // ----------------------------------------------------------
+  // Route already traveled
+  // ----------------------------------------------------------
+  //
+  // Everything before the current waypoint is displayed as the
+  // completed portion of the route.
+
   const completedRoutePositions =
     currentWaypointIndex >= 0
-      ? routePositions.slice(0, currentWaypointIndex + 1)
+      ? routePositions.slice(
+          0,
+          currentWaypointIndex + 1
+        )
       : []
 
+
+  // ==========================================================
+  // Map UI
+  // ==========================================================
+
   return (
-    <MapContainer
-      center={[latitude, longitude]}
-      zoom={18}
-      style={{ height: "100%", width: "100%" }}
+
+    // This wrapper allows normal React HTML elements to be
+    // positioned over the Leaflet map.
+
+    <div
+      className="drone-map"
+      style={{
+        position: "relative",
+        height: "100%",
+        width: "100%",
+      }}
     >
-      <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
 
-      {/* SEARCH AREA */}
-      {searchArea && (
-        <Polygon
-          positions={searchAreaPolygon}
-          pathOptions={{
-            color: "red",
-            weight: 3,
-            fillOpacity: 0.15,
-          }}
-        >
-          <Tooltip sticky>
-            <div>
-              <strong>SEARCH AREA</strong>
-              <br />
-              <br />
 
-              <strong>Corner 1</strong>
-              <br />
-              Latitude:{" "}
-              {searchArea.corner_1.latitude.toFixed(6)}
-              <br />
-              Longitude:{" "}
-              {searchArea.corner_1.longitude.toFixed(6)}
+      <MapContainer
+        center={[
+          latitude,
+          longitude,
+        ]}
 
-              <br />
-              <br />
+        zoom={18}
 
-              <strong>Corner 2</strong>
-              <br />
-              Latitude:{" "}
-              {searchArea.corner_2.latitude.toFixed(6)}
-              <br />
-              Longitude:{" "}
-              {searchArea.corner_2.longitude.toFixed(6)}
-            </div>
-          </Tooltip>
-        </Polygon>
-      )}
+        style={{
+          height: "100%",
+          width: "100%",
+        }}
+      >
 
-      {/* PLANNED ROUTE */}
-      {route && routePositions.length > 1 && (
-        <Polyline
-          positions={routePositions}
-          pathOptions={{
-            color: "blue",
-            weight: 4,
-          }}
-        >
-          <Tooltip sticky>
-            <strong>PLANNED SEARCH ROUTE</strong>
-            <br />
-            Waypoints: {route.waypoints.length}
-          </Tooltip>
-        </Polyline>
-      )}
 
-      {/* COMPLETED ROUTE */}
-      {completedRoutePositions.length > 1 && (
-        <Polyline
-          positions={completedRoutePositions}
-          pathOptions={{
-            color: "lime",
-            weight: 6,
-          }}
-        >
-          <Tooltip sticky>
-            <strong>COMPLETED ROUTE</strong>
-            <br />
-            Waypoints completed: {currentWaypointIndex + 1}
-          </Tooltip>
-        </Polyline>
-      )}
+        {/* ====================================================
+            OpenStreetMap Map Tiles
+            ==================================================== */}
 
-      {/* WAYPOINTS */}
-      {route?.waypoints.map((waypoint, index) => {
-        const isCurrent = index === currentWaypointIndex
-        const isCompleted =
-          index < currentWaypointIndex
+        <TileLayer
+          attribution="&copy; OpenStreetMap contributors"
 
-        return (
-          <CircleMarker
-            key={index}
-            center={[
-              waypoint.latitude,
-              waypoint.longitude,
-            ]}
-            radius={isCurrent ? 9 : 6}
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+
+
+        {/* ====================================================
+            Planned Route
+            ==================================================== */}
+
+        {routePositions.length > 1 && (
+
+          <Polyline
+            positions={routePositions}
+
             pathOptions={{
-              color: isCurrent
-                ? "yellow"
-                : isCompleted
-                  ? "lime"
-                  : "blue",
-              fillColor: isCurrent
-                ? "yellow"
-                : isCompleted
-                  ? "lime"
-                  : "blue",
-              fillOpacity: 0.9,
-              weight: 2,
+              color: "blue",
+              weight: 4,
             }}
           >
-            <Tooltip>
-              <div>
-                <strong>
-                  WAYPOINT {index + 1}
-                </strong>
 
-                <br />
-                <br />
+            <Tooltip sticky>
 
-                <strong>
-                  {isCurrent
-                    ? "CURRENT"
-                    : isCompleted
-                      ? "COMPLETED"
-                      : "UPCOMING"}
-                </strong>
+              <strong>
+                PLANNED SEARCH ROUTE
+              </strong>
 
-                <br />
-                <br />
+              <br />
 
-                Latitude:{" "}
-                {waypoint.latitude.toFixed(6)}
-                <br />
+              Waypoints:{" "}
+              {route.waypoints.length}
 
-                Longitude:{" "}
-                {waypoint.longitude.toFixed(6)}
-                <br />
-
-                Altitude:{" "}
-                {waypoint.altitude.toFixed(1)} m
-              </div>
             </Tooltip>
-          </CircleMarker>
-        )
-      })}
 
-      {/* DRONE */}
-      <Marker
-        position={[latitude, longitude]}
-        icon={droneIcon}
-      >
-        <Tooltip>
-          <div>
-            <strong>DRONE</strong>
+          </Polyline>
 
-            <br />
-            <br />
+        )}
 
-            Latitude: {latitude.toFixed(6)}
-            <br />
 
-            Longitude: {longitude.toFixed(6)}
-            <br />
+        {/* ====================================================
+            Completed Route
+            ==================================================== */}
 
-            Altitude: {altitude.toFixed(1)} m
-            <br />
+        {completedRoutePositions.length > 1 && (
 
-            Battery: {battery.toFixed(1)}%
-          </div>
-        </Tooltip>
-      </Marker>
+          <Polyline
+            positions={
+              completedRoutePositions
+            }
 
-      {/* TARGET LOCATION */}
-      
-      {targetLocation && (
-        <CircleMarker
-          center={[
-            targetLocation.latitude,
-            targetLocation.longitude,
+            pathOptions={{
+              color: "lime",
+              weight: 6,
+            }}
+          >
+
+            <Tooltip sticky>
+
+              <strong>
+                COMPLETED ROUTE
+              </strong>
+
+              <br />
+
+              Waypoints completed:{" "}
+              {currentWaypointIndex + 1}
+
+            </Tooltip>
+
+          </Polyline>
+
+        )}
+
+
+        {/* ====================================================
+            Route Waypoints
+            ==================================================== */}
+
+        {route.waypoints.map(
+          (waypoint, index) => {
+
+            const isCurrent =
+              index === currentWaypointIndex
+
+
+            const isCompleted =
+              index < currentWaypointIndex
+
+
+            return (
+
+              <CircleMarker
+                key={index}
+
+                center={[
+                  waypoint.latitude,
+                  waypoint.longitude,
+                ]}
+
+                radius={
+                  isCurrent ? 9 : 6
+                }
+
+                pathOptions={{
+
+                  color: isCurrent
+                    ? "yellow"
+                    : isCompleted
+                      ? "lime"
+                      : "blue",
+
+                  fillColor: isCurrent
+                    ? "yellow"
+                    : isCompleted
+                      ? "lime"
+                      : "blue",
+
+                  fillOpacity: 0.9,
+
+                  weight: 2,
+                }}
+              >
+
+                <Tooltip>
+
+                  <div>
+
+                    <strong>
+                      WAYPOINT {index + 1}
+                    </strong>
+
+                    <br />
+                    <br />
+
+                    <strong>
+
+                      {isCurrent
+                        ? "CURRENT"
+                        : isCompleted
+                          ? "COMPLETED"
+                          : "UPCOMING"}
+
+                    </strong>
+
+                    <br />
+                    <br />
+
+                    Latitude:{" "}
+
+                    {waypoint.latitude.toFixed(6)}
+
+                    <br />
+
+                    Longitude:{" "}
+
+                    {waypoint.longitude.toFixed(6)}
+
+                    <br />
+
+                    Altitude:{" "}
+
+                    {waypoint.altitude !== undefined
+                      ? `${waypoint.altitude.toFixed(1)} m`
+                      : "--"}
+
+                  </div>
+
+                </Tooltip>
+
+              </CircleMarker>
+            )
+          }
+        )}
+
+
+        {/* ====================================================
+            Drone Position
+            ==================================================== */}
+
+        <Marker
+          position={[
+            latitude,
+            longitude,
           ]}
-          radius={12}
-          pathOptions={{
-            color: "orange",
-            fillColor: "orange",
-            fillOpacity: 0.9,
-            weight: 3,
-          }}
+
+          icon={droneIcon}
         >
-          <Tooltip sticky>
+
+          <Tooltip>
+
             <div>
-              <strong>TARGET DETECTED</strong>
-              <br /><br />
-              Latitude: {targetLocation.latitude.toFixed(6)}
+
+              <strong>
+                DRONE
+              </strong>
+
               <br />
-              Longitude: {targetLocation.longitude.toFixed(6)}
               <br />
-              Altitude: {targetLocation.altitude.toFixed(1)} m
+
+              Latitude:{" "}
+
+              {latitude.toFixed(6)}
+
+              <br />
+
+              Longitude:{" "}
+
+              {longitude.toFixed(6)}
+
+              <br />
+
+              Altitude:{" "}
+
+              {altitude !== null
+                ? `${altitude.toFixed(1)} m`
+                : "--"}
+
+              <br />
+
+              Battery:{" "}
+
+              {battery !== null
+                ? `${battery.toFixed(1)}%`
+                : "--"}
+
             </div>
+
           </Tooltip>
-        </CircleMarker>
-      )}
-      {/* ROUTE PROGRESS */}
-      {route && route.waypoints.length > 0 && (
+
+        </Marker>
+
+
+        {/* ====================================================
+            Detected Targets
+            ====================================================
+            
+            The backend stores detected target locations in an
+            array, so every target can be displayed on the map.
+        */}
+
+        {targets.map(
+          (target, index) => (
+
+            <CircleMarker
+              key={`target-${index}`}
+
+              center={[
+                target.latitude,
+                target.longitude,
+              ]}
+
+              radius={12}
+
+              pathOptions={{
+                color: "orange",
+                fillColor: "orange",
+                fillOpacity: 0.9,
+                weight: 3,
+              }}
+            >
+
+              <Tooltip sticky>
+
+                <div>
+
+                  <strong>
+                    TARGET {index + 1} DETECTED
+                  </strong>
+
+                  <br />
+                  <br />
+
+                  Latitude:{" "}
+
+                  {target.latitude.toFixed(6)}
+
+                  <br />
+
+                  Longitude:{" "}
+
+                  {target.longitude.toFixed(6)}
+
+                  <br />
+
+                  Altitude:{" "}
+
+                  {target.altitude_m.toFixed(1)} m
+
+                </div>
+
+              </Tooltip>
+
+            </CircleMarker>
+
+          )
+        )}
+
+      </MapContainer>
+
+
+      {/* ======================================================
+          Route Progress Overlay
+          ======================================================
+          
+          This is regular React HTML rather than a Leaflet map
+          layer, so it stays outside MapContainer and is placed
+          over the map using CSS.
+      */}
+
+      {route.waypoints.length > 0 && (
+
         <div className="route-progress-overlay">
+
           <div className="route-progress-title">
+
             ROUTE PROGRESS
+
           </div>
+
 
           <div className="route-progress-value">
+
             {routeComplete
               ? route.waypoints.length
-              : Math.max(currentWaypointIndex + 1, 1)}
+              : Math.max(
+                  currentWaypointIndex + 1,
+                  1
+                )}
+
             {" / "}
+
             {route.waypoints.length}
+
           </div>
 
+
           <div className="route-progress-status">
+
             {routeComplete
+
               ? "ROUTE COMPLETE"
-              : `WAYPOINT ${currentWaypointIndex + 1}`}
+
+              : currentWaypointIndex >= 0
+
+                ? `WAYPOINT ${
+                    currentWaypointIndex + 1
+                  }`
+
+                : "WAITING FOR ROUTE"}
+
           </div>
+
         </div>
+
       )}
-    </MapContainer>
+
+    </div>
   )
 }
 
-export default DroneMap
+
+export default DroneMap 
