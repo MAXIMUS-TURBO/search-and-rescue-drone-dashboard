@@ -1,0 +1,347 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #111827;
+  color: white;
+}
+
+.dashboard {
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px;
+  background: #1f2937;
+  border-bottom: 1px solid #374151;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.header p {
+  margin: 6px 0 0;
+  color: #9ca3af;
+}
+
+.drone-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+main {
+  padding: 40px;
+}
+
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.card {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 24px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.label {
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.value {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.mission-panel {
+  margin-top: 20px;
+  padding: 24px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 10px;
+  display: flex;
+  gap: 100px;
+}
+
+.mission-panel h2 {
+  margin: 8px 0 0;
+  font-size: 24px;
+}
+
+@media (max-width: 900px) {
+  .telemetry-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .header {
+    padding: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  main {
+    padding: 20px;
+  }
+
+  .telemetry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-panel {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.mission-visuals {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  height: 550px;
+  margin-top: 16px;
+}
+
+.map-panel,
+.camera-panel {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.map-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #111827;
+  color: white;
+}
+
+.panel-status {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.map-container {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.camera-feed {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #111827;
+  color: white;
+}
+
+.camera-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.camera-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.camera-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #030712;
+}
+
+.camera-placeholder {
+  text-align: center;
+  color: #9ca3af;
+}
+
+.camera-icon {
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+
+.camera-title {
+  font-size: 16px;
+  color: white;
+}
+
+.camera-placeholder small {
+  display: block;
+  margin-top: 6px;
+  color: #6b7280;
+}
+
+.camera-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* adding all ros 2 nodes as a test */
+
+.mission-overlay {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+
+  z-index: 1000;
+
+  width: 280px;
+
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  overflow: hidden;
+}
+
+.mission-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 12px 14px;
+
+  cursor: pointer;
+  user-select: none;
+
+  font-size: 16px;
+}
+
+.mission-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapse-arrow {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.mission-overlay-content {
+  max-height: 300px;
+  opacity: 1;
+
+  overflow: hidden;
+
+  transition: max-height 0.2s ease, opacity 0.2s ease;
+}
+
+.mission-overlay.collapsed .mission-overlay-content {
+  max-height: 0;
+  opacity: 0;
+}
+
+.mission-overlay-row {
+  display: flex;
+  justify-content: space-between;
+
+  padding: 7px 14px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+
+  font-size: 12px;
+}
+
+.mission-overlay-row span {
+  opacity: 0.65;
+}
+
+.mission-overlay-detail {
+  margin: 10px 14px 14px;
+  padding-top: 10px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+
+  font-size: 11px;
+  opacity: 0.75;
+  line-height: 1.4;
+}
+
+.route-progress-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+
+  z-index: 1000;
+
+  min-width: 150px;
+  padding: 12px 16px;
+
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+
+  border-radius: 8px;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.route-progress-title {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  opacity: 0.65;
+}
+
+.route-progress-value {
+  margin-top: 4px;
+
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.route-progress-status {
+  margin-top: 3px;
+
+  font-size: 11px;
+  opacity: 0.75;
+}

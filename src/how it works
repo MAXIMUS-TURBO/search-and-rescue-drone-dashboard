@@ -1,0 +1,22 @@
+┌─────────────────────┐
+│ Drone / Simulation  │
+│ ROS 2 + PX4         │
+└──────────┬──────────┘
+           │
+           │ telemetry
+           ▼
+┌─────────────────────┐
+│ Python / Backend    │
+│ JSON data           │
+└──────────┬──────────┘
+           │
+           │ API / WebSocket
+           ▼
+┌─────────────────────┐
+│ React Dashboard     │    
+│                     │
+│ Battery    82%      │
+│ Altitude   42.5 m   │
+│ Speed      8.2 m/s  │
+│ GPS        ...      │
+└─────────────────────┘
